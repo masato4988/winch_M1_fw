@@ -105,6 +105,7 @@ int main(void)
   //============================================================================
   RGBLED_Init();
 
+  RGBLED_SetColor(RGBLED_COLOR_BLUE);
 
   /* USER CODE END 2 */
 
@@ -112,6 +113,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+//	  volatile uint32_t ctrl = SysTick->CTRL;
+//	  volatile uint32_t load = SysTick->LOAD;
+//	  volatile uint32_t val  = SysTick->VAL;
+//	  volatile uint32_t isr = SCB->ICSR;
+
+
 	  RGBLED_SetColor(RGBLED_COLOR_RED);
 	  HAL_Delay(1000);
 	  RGBLED_SetColor(RGBLED_COLOR_GREEN);
