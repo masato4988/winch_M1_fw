@@ -6,14 +6,13 @@
  */
 
 
-#include "actuator/motor/pwm.h"
-
+#include <actuator/motor/ir2302_bridge.h>
 #include "tim.h"
 #include "gpio.h"
 
 #include "config/config_motor.h"
 
-void MotorPWM_Init(void)
+void IR2302bridge_Init(void)
 {
 	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
@@ -28,7 +27,7 @@ void MotorPWM_Init(void)
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 }
 
-void MotorPWM_Enable(void)
+void IR2302bridge_Enable(void)
 {
     HAL_GPIO_WritePin(H_SD1_GPIO_Port,
                       H_SD1_Pin,
@@ -39,7 +38,7 @@ void MotorPWM_Enable(void)
                       GPIO_PIN_SET);
 }
 
-void MotorPWM_Disable(void)
+void IR2302bridge_Disable(void)
 {
     HAL_GPIO_WritePin(H_SD1_GPIO_Port,
                       H_SD1_Pin,
@@ -50,7 +49,7 @@ void MotorPWM_Disable(void)
                       GPIO_PIN_RESET);
 }
 
-void MotorPWM_SetDutyHB1(uint16_t duty)
+void IR2302Bridge_SetHB1Duty(uint16_t duty)
 {
     if(duty > MOTOR_PWM_MAX_DUTY)
     {
@@ -62,7 +61,7 @@ void MotorPWM_SetDutyHB1(uint16_t duty)
                           duty);
 }
 
-void MotorPWM_SetDutyHB2(uint16_t duty)
+void IR2302Bridge_SetHB2Duty(uint16_t duty)
 {
     if(duty > MOTOR_PWM_MAX_DUTY)
     {
