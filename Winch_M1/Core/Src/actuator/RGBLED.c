@@ -12,6 +12,8 @@
 
 #define RGBLED_PWM_MAX    (__HAL_TIM_GET_AUTORELOAD(&htim8))
 
+float brightness = 0.02f;
+
 void RGBLED_Init(void)
 {
     /* PWM開始 */
@@ -35,42 +37,66 @@ void RGBLED_SetRGB(uint8_t r, uint8_t g, uint8_t b)
 
 void RGBLED_SetColor(RGBLED_Color_t color)
 {
+	uint8_t R = 0;
+	uint8_t G = 0;
+	uint8_t B = 0;
+
     switch(color)
     {
     case RGBLED_COLOR_OFF:
-        RGBLED_SetRGB(0,0,0);
+    	R = 0;
+    	G = 0;
+    	B = 0;
         break;
 
     case RGBLED_COLOR_RED:
-        RGBLED_SetRGB(255,0,0);
+    	R = (uint8_t)(256 * brightness);
+    	G = 0;
+    	B = 0;
         break;
 
     case RGBLED_COLOR_GREEN:
-        RGBLED_SetRGB(0,255,0);
+    	R = 0;
+    	G = (uint8_t)(256 * brightness);
+    	B = 0;
         break;
 
     case RGBLED_COLOR_BLUE:
-        RGBLED_SetRGB(0,0,255);
+    	R = 0;
+    	G = 0;
+    	B = (uint8_t)(256 * brightness);
         break;
 
     case RGBLED_COLOR_YELLOW:
-        RGBLED_SetRGB(255,255,0);
+    	R = (uint8_t)(256 * brightness);
+    	G = (uint8_t)(256 * brightness);
+    	B = 0;
         break;
 
     case RGBLED_COLOR_CYAN:
-        RGBLED_SetRGB(0,255,255);
+    	R = 0;
+    	G = (uint8_t)(256 * brightness);
+    	B = (uint8_t)(256 * brightness);
+
         break;
 
     case RGBLED_COLOR_MAGENTA:
-        RGBLED_SetRGB(255,0,255);
+    	R = (uint8_t)(256 * brightness);
+    	G = 0;
+    	B = (uint8_t)(256 * brightness);
         break;
 
     case RGBLED_COLOR_WHITE:
-        RGBLED_SetRGB(255,255,255);
+    	R = (uint8_t)(256 * brightness);
+    	G = (uint8_t)(256 * brightness);
+    	B = (uint8_t)(256 * brightness);
         break;
 
     default:
-        RGBLED_SetRGB(0,0,0);
+    	R = 0;
+    	G = 0;
+    	B = 0;
         break;
     }
+	RGBLED_SetRGB(R,G,B);
 }

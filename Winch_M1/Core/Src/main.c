@@ -32,6 +32,8 @@
 
 #include "actuator/RGBLED.h"
 #include "sensor/encoder.h"
+
+#include "actuator/motor/motor_driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -109,14 +111,20 @@ int main(void)
   //============================================================================
   RGBLED_Init();
   RGBLED_SetColor(RGBLED_COLOR_RED);
-  HAL_Delay(100);
+  HAL_Delay(500);
   RGBLED_SetColor(RGBLED_COLOR_GREEN);
-  HAL_Delay(100);
+  HAL_Delay(500);
   RGBLED_SetColor(RGBLED_COLOR_BLUE);
+  HAL_Delay(500);
+  RGBLED_SetColor(RGBLED_COLOR_OFF);
 
   Encoder_Init();
 
   char tx_buf[64];
+
+  MotorDriver_Init();
+  MotorDriver_SetState(MOTOR_STATE_DRIVE);
+  HAL_Delay(3000);
 
   /* USER CODE END 2 */
 
@@ -124,19 +132,39 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  Encoder_Update();
-      snprintf(tx_buf,
-    		  sizeof(tx_buf),
-			  "Count=%ld %d %d %d\r\n",
-			  Encoder_GetCount(),
-			  (int32_t)(Encoder_GetPosition()*1000),
-			  (int32_t)(Encoder_GetSpeed()*1000),
-			  (int32_t)(Encoder_GetAcceleration()*1000)
-			  );
+//	  Encoder_Update();
+//      snprintf(tx_buf,
+//    		  sizeof(tx_buf),
+//			  "Count=%ld %d %d %d\r\n",
+//			  Encoder_GetCount(),
+//			  (int32_t)(Encoder_GetPosition()*1000),
+//			  (int32_t)(Encoder_GetSpeed()*1000),
+//			  (int32_t)(Encoder_GetAcceleration()*1000)
+//			  );
+//
+//      HAL_UART_Transmit(&huart2, (uint8_t *)tx_buf, strlen(tx_buf), HAL_MAX_DELAY);
+//
+//	  HAL_Delay(100);
 
-      HAL_UART_Transmit(&huart2, (uint8_t *)tx_buf, strlen(tx_buf), HAL_MAX_DELAY);
+	  MotorDriver_SetState(MOTOR_STATE_DRIVE);
+	  MotorDriver_SetDuty(800);
+	  RGBLED_SetColor(RGBLED_COLOR_GREEN);
+	  HAL_Delay(2000);
 
-	  HAL_Delay(100);
+	  RGBLED_SetColor(RGBLED_COLOR_WHITE);
+	  MotorDriver_SetState(MOTOR_STATE_FREE);
+	  HAL_Delay(2000);
+
+	  MotorDriver_SetState(MOTOR_STATE_DRIVE);
+	  MotorDriver_SetDuty(-800);
+	  RGBLED_SetColor(RGBLED_COLOR_BLUE);
+	  HAL_Delay(2000);
+
+	  MotorDriver_SetState(MOTOR_STATE_BRAKE);
+	  RGBLED_SetColor(RGBLED_COLOR_RED);
+	  HAL_Delay(2000);
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

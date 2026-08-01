@@ -1,5 +1,5 @@
 /*
- * pwm.c
+ * ir2302_bridge.c
  *
  *  Created on: Jul 28, 2026
  *      Author: miyab
@@ -51,24 +51,26 @@ void IR2302bridge_Disable(void)
 
 void IR2302Bridge_SetHB1Duty(uint16_t duty)
 {
-    if(duty > MOTOR_PWM_MAX_DUTY)
+    if (duty > 1000U)
     {
-        duty = MOTOR_PWM_MAX_DUTY;
+        duty = 1000U;
     }
 
-    __HAL_TIM_SET_COMPARE(&htim1,
-                          TIM_CHANNEL_1,
-                          duty);
+    uint32_t compare =
+        ((uint32_t)duty * MOTOR_PWM_COMPARE_MAX) / 1000U;
+
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, compare);
 }
 
 void IR2302Bridge_SetHB2Duty(uint16_t duty)
 {
-    if(duty > MOTOR_PWM_MAX_DUTY)
+    if (duty > 1000U)
     {
-        duty = MOTOR_PWM_MAX_DUTY;
+        duty = 1000U;
     }
 
-    __HAL_TIM_SET_COMPARE(&htim1,
-                          TIM_CHANNEL_2,
-                          duty);
+    uint32_t compare =
+        ((uint32_t)duty * MOTOR_PWM_COMPARE_MAX) / 1000U;
+
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, compare);
 }
