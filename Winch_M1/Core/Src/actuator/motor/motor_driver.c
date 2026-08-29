@@ -6,22 +6,23 @@
  */
 #include "actuator/motor/ir2302_bridge.h"
 #include "actuator/motor/motor_driver.h"
+#include "config/config_motor.h"
 
 static MotorState_t s_state = MOTOR_STATE_DISABLE;
-static int16_t s_duty = 0;
+static float s_duty = 0.0f;
 
 /* private -----------------------------------------------------------*/
 
-static void MotorDriver_OutputForward(uint16_t duty);
-static void MotorDriver_OutputReverse(uint16_t duty);
+static void MotorDriver_OutputForward(float duty);
+static void MotorDriver_OutputReverse(float duty);
 
 /* public ------------------------------------------------------------*/
 
 void MotorDriver_Init(void)
 {
-	IR2302bridge_Init();
+    IR2302bridge_Init();
 
-    MotorDriver_SetDuty(0);
+    MotorDriver_SetDuty(0.0f);
     MotorDriver_SetState(MOTOR_STATE_DISABLE);
 }
 
@@ -33,32 +34,32 @@ void MotorDriver_SetState(MotorState_t state)
     {
     case MOTOR_STATE_DISABLE:
 
-    	IR2302bridge_Disable();
+        IR2302bridge_Disable();
 
         break;
 
     case MOTOR_STATE_FREE:
 
-    	IR2302bridge_Disable();
+        IR2302bridge_Disable();
 
-    	IR2302Bridge_SetHB1Duty(0);
-    	IR2302Bridge_SetHB2Duty(0);
+        IR2302Bridge_SetHB1Duty(0);
+        IR2302Bridge_SetHB2Duty(0);
 
         break;
 
     case MOTOR_STATE_BRAKE:
 
-    	IR2302bridge_Enable();
+        IR2302bridge_Enable();
 
         /* 両Low Side ON */
-    	IR2302Bridge_SetHB1Duty(0);
-    	IR2302Bridge_SetHB2Duty(0);
+        IR2302Bridge_SetHB1Duty(0);
+        IR2302Bridge_SetHB2Duty(0);
 
         break;
 
     case MOTOR_STATE_DRIVE:
 
-    	IR2302bridge_Enable();
+        IR2302bridge_Enable();
 
         /* 現在Dutyを反映 */
         MotorDriver_SetDuty(s_duty);
@@ -73,16 +74,16 @@ void MotorDriver_SetState(MotorState_t state)
     }
 }
 
-void MotorDriver_SetDuty(int16_t duty)
+void MotorDriver_SetDuty(float duty)
 {
-    if(duty > 1000)
+    if(duty > 1.0f)
     {
-        duty = 1000;
+        duty = 1.0f;
     }
 
-    if(duty < -1000)
+    if(duty < -1.0f)
     {
-        duty = -1000;
+        duty = -1.0f;
     }
 
     s_duty = duty;
@@ -92,13 +93,13 @@ void MotorDriver_SetDuty(int16_t duty)
         return;
     }
 
-    if(duty >= 0)
+    if(duty >= 0.0f)
     {
-        MotorDriver_OutputForward((uint16_t)duty);
+        MotorDriver_OutputForward(duty);
     }
     else
     {
-        MotorDriver_OutputReverse((uint16_t)(-duty));
+        MotorDriver_OutputReverse(-duty);
     }
 }
 
@@ -107,22 +108,22 @@ MotorState_t MotorDriver_GetState(void)
     return s_state;
 }
 
-int16_t MotorDriver_GetDuty(void)
+float MotorDriver_GetDuty(void)
 {
     return s_duty;
 }
 
 /* private -----------------------------------------------------------*/
 
-static void MotorDriver_OutputForward(uint16_t duty)
+static void MotorDriver_OutputForward(float duty)
 {
-	IR2302Bridge_SetHB1Duty(duty);
-	IR2302Bridge_SetHB2Duty(0);
+    IR2302Bridge_SetHB1Duty(duty);
+    IR2302Bridge_SetHB2Duty(0.0f);
 }
 
-static void MotorDriver_OutputReverse(uint16_t duty)
+static void MotorDriver_OutputReverse(float duty)
 {
-	IR2302Bridge_SetHB1Duty(0);
-	IR2302Bridge_SetHB2Duty(duty);
+    IR2302Bridge_SetHB1Duty(0.0f);
+    IR2302Bridge_SetHB2Duty(duty);
 }
 

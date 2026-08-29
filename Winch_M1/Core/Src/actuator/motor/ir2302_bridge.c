@@ -14,17 +14,17 @@
 
 void IR2302bridge_Init(void)
 {
-	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
-	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_2);
 
-	__HAL_TIM_SET_PRESCALER(&htim1, MOTOR_PWM_PRESCALER);
-	__HAL_TIM_SET_AUTORELOAD(&htim1, MOTOR_PWM_PERIOD);
+    __HAL_TIM_SET_PRESCALER(&htim1, MOTOR_PWM_PRESCALER);
+    __HAL_TIM_SET_AUTORELOAD(&htim1, MOTOR_PWM_PERIOD);
 
-	/* 新しいARRを反映 */
-	htim1.Instance->EGR = TIM_EGR_UG;
+    /* 新しいARRを反映 */
+    htim1.Instance->EGR = TIM_EGR_UG;
 
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 }
 
 void IR2302bridge_Enable(void)
@@ -49,28 +49,38 @@ void IR2302bridge_Disable(void)
                       GPIO_PIN_RESET);
 }
 
-void IR2302Bridge_SetHB1Duty(uint16_t duty)
+void IR2302Bridge_SetHB1Duty(float duty)
 {
-    if (duty > 1000U)
+    if(duty > 1.0f)
     {
-        duty = 1000U;
+        duty = 1.0f;
+    }
+
+    if(duty < 0.0f)
+    {
+        duty = 0.0f;
     }
 
     uint32_t compare =
-        ((uint32_t)duty * MOTOR_PWM_COMPARE_MAX) / 1000U;
+        (uint32_t)(duty * MOTOR_PWM_COMPARE_MAX);
 
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, compare);
 }
 
-void IR2302Bridge_SetHB2Duty(uint16_t duty)
+void IR2302Bridge_SetHB2Duty(float duty)
 {
-    if (duty > 1000U)
+    if(duty > 1.0f)
     {
-        duty = 1000U;
+        duty = 1.0f;
+    }
+
+    if(duty < 0.0f)
+    {
+        duty = 0.0f;
     }
 
     uint32_t compare =
-        ((uint32_t)duty * MOTOR_PWM_COMPARE_MAX) / 1000U;
+        (uint32_t)(duty * MOTOR_PWM_COMPARE_MAX);
 
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, compare);
 }

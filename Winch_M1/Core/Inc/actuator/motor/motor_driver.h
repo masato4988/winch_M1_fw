@@ -13,22 +13,25 @@
 
 typedef enum
 {
-    MOTOR_STATE_DISABLE = 0,
+    MOTOR_STATE_DISABLE,
     MOTOR_STATE_FREE,
     MOTOR_STATE_BRAKE,
     MOTOR_STATE_DRIVE,
-    MOTOR_STATE_REGEN,      // TODO
-
+    MOTOR_STATE_REGEN
 } MotorState_t;
 
 void MotorDriver_Init(void);
 
 void MotorDriver_SetState(MotorState_t state);
 
-void MotorDriver_SetDuty(int16_t duty);
+/* Duty [-1.0 ～ +1.0]
+ * + : Forward
+ * - : Reverse
+ */
+void MotorDriver_SetDuty(float duty);
 
 MotorState_t MotorDriver_GetState(void);
 
-int16_t MotorDriver_GetDuty(void);
+float MotorDriver_GetDuty(void);
 
 #endif /* INC_ACTUATOR_MOTOR_MOTOR_DRIVER_H_ */

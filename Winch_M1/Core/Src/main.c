@@ -32,8 +32,12 @@
 
 #include "actuator/RGBLED.h"
 #include "sensor/encoder.h"
-
 #include "actuator/motor/motor_driver.h"
+#include "actuator/motor/speed_controller.h"
+
+#include "config/config_control.h"
+
+#include "actuator/motor/ir2302_bridge.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,7 +64,7 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+static void ControlTimer_Config(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -82,7 +86,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+ HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -107,8 +111,11 @@ int main(void)
   MX_ADC2_Init();
   MX_I2C1_Init();
   MX_TIM8_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   //============================================================================
+  ControlTimer_Config();
+
   RGBLED_Init();
   RGBLED_SetColor(RGBLED_COLOR_RED);
   HAL_Delay(500);
@@ -118,53 +125,64 @@ int main(void)
   HAL_Delay(500);
   RGBLED_SetColor(RGBLED_COLOR_OFF);
 
+  printf("stm32_boot\r\n");
+
   Encoder_Init();
-
-  char tx_buf[64];
-
   MotorDriver_Init();
-  MotorDriver_SetState(MOTOR_STATE_DRIVE);
-  HAL_Delay(3000);
+//  SpeedController_Init();
 
+  HAL_Delay(100);
+//  IR2302Bridge_SetHB1Duty(1000);
+//  IR2302Bridge_SetHB2Duty(1000);
+  MotorDriver_SetState(MOTOR_STATE_DRIVE);
+
+  HAL_Delay(1000);
+  HAL_TIM_Base_Start_IT(&htim6);
+  printf("stm32_ready\r\n");
+
+//  MotorDriver_SetDuty(0.3);
+//  HAL_Delay(500);
+//  MotorDriver_SetDuty(0.5);
+//  HAL_Delay(2000);
+//  MotorDriver_SetDuty(1.0);
+//  HAL_Delay(1000);
+  SpeedController_SetTargetSpeed(100.0);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	  Encoder_Update();
-//      snprintf(tx_buf,
-//    		  sizeof(tx_buf),
-//			  "Count=%ld %d %d %d\r\n",
-//			  Encoder_GetCount(),
-//			  (int32_t)(Encoder_GetPosition()*1000),
-//			  (int32_t)(Encoder_GetSpeed()*1000),
-//			  (int32_t)(Encoder_GetAcceleration()*1000)
-//			  );
-//
-//      HAL_UART_Transmit(&huart2, (uint8_t *)tx_buf, strlen(tx_buf), HAL_MAX_DELAY);
-//
-//	  HAL_Delay(100);
+//	  SpeedController_SetTargetSpeed(6.0);
+//	  HAL_Delay(1000);
+//	  SpeedController_SetTargetSpeed(12.0);
+//	  HAL_Delay(1000);
+//	  SpeedController_SetTargetSpeed(0.0);
+//	  HAL_Delay(1000);
+//	  SpeedController_SetTargetSpeed(-6.0);
+//	  HAL_Delay(1000);
+//	  SpeedController_SetTargetSpeed(-12.0);
+//	  HAL_Delay(1000);
+//	  SpeedController_SetTargetSpeed(0.0);
+//	  HAL_Delay(1000);
 
-	  MotorDriver_SetState(MOTOR_STATE_DRIVE);
-	  MotorDriver_SetDuty(800);
-	  RGBLED_SetColor(RGBLED_COLOR_GREEN);
-	  HAL_Delay(2000);
+//	  MotorDriver_SetDuty(100);
+//	  HAL_Delay(1000);
+//	  MotorDriver_SetDuty(0);
+//	  HAL_Delay(1000);
+//	  MotorDriver_SetDuty(-100);
+//	  HAL_Delay(1000);
+//	  MotorDriver_SetDuty(0);
+//	  HAL_Delay(1000);
 
-	  RGBLED_SetColor(RGBLED_COLOR_WHITE);
-	  MotorDriver_SetState(MOTOR_STATE_FREE);
-	  HAL_Delay(2000);
-
-	  MotorDriver_SetState(MOTOR_STATE_DRIVE);
-	  MotorDriver_SetDuty(-800);
-	  RGBLED_SetColor(RGBLED_COLOR_BLUE);
-	  HAL_Delay(2000);
-
-	  MotorDriver_SetState(MOTOR_STATE_BRAKE);
-	  RGBLED_SetColor(RGBLED_COLOR_RED);
-	  HAL_Delay(2000);
-
-
+	  printf("T=%d C=%d E=%d OUT=%d\r\n",
+			  (int)(1 * SpeedController_GetTargetSpeed()),
+			  (int)(1 * SpeedController_GetCurrentSpeed()),
+			  (int)(1 * SpeedController_GetError()),
+			  (int)(1000 * SpeedController_GetOutput())
+	  );
+	  printf("%ld\r\n",Encoder_GetRawCount());
+	  HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -218,7 +236,61 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void ControlTimer_Config(void)
+{
+    uint32_t timer_clock_hz = 170000000UL;
+    uint32_t timer_tick_hz  = 1000000UL;
 
+    uint32_t prescaler;
+    uint32_t period;
+
+    /* タイマカウンタを1 MHzにする */
+    prescaler =
+        (timer_clock_hz / timer_tick_hz) - 1U;
+
+    /* 制御周期を設定 */
+    period =
+        (timer_tick_hz / CONTROL_FREQ_HZ) - 1U;
+
+    HAL_TIM_Base_Stop(&htim6);
+
+    __HAL_TIM_SET_PRESCALER(&htim6, prescaler);
+    __HAL_TIM_SET_AUTORELOAD(&htim6, period);
+
+    /* PSC/ARRの変更を即時反映 */
+    __HAL_TIM_SET_COUNTER(&htim6, 0);
+    htim6.Instance->EGR = TIM_EGR_UG;
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if(htim->Instance == TIM6)
+    {
+    	/* 制御処理開始 */
+		HAL_GPIO_WritePin(GPIO_EX_1_GPIO_Port, GPIO_EX_1_Pin, GPIO_PIN_SET);
+
+        Encoder_Update(CONTROL_PERIOD_S);
+
+        SpeedController_Update(CONTROL_PERIOD_S);
+
+        /* �?来 */
+        // PositionController_Update();
+
+        // LoadCell_Update();
+        /* 制御処理終了 */
+		HAL_GPIO_WritePin(GPIO_EX_1_GPIO_Port, GPIO_EX_1_Pin, GPIO_PIN_RESET);
+    }
+}
+
+int _write(int file, char *ptr, int len)
+{
+    HAL_UART_Transmit(&huart2,
+                      (uint8_t *)ptr,
+                      len,
+                      HAL_MAX_DELAY);
+
+    return len;
+}
 /* USER CODE END 4 */
 
 /**

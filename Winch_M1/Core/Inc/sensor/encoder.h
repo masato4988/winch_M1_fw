@@ -12,15 +12,18 @@
 #include <stdint.h>
 
 void Encoder_Init(void);
-void Encoder_Update(void);
-
-int32_t Encoder_GetCount(void);
-void Encoder_SetCount(int32_t count);
 void Encoder_Reset(void);
 
+void Encoder_ResetPosition(float position);
+
+void Encoder_Update(float dt);
+
+
+int32_t Encoder_GetRawCount(void);
 float Encoder_GetPosition(void);
 float Encoder_GetSpeed(void);
 float Encoder_GetAcceleration(void);
+
 
 
 
