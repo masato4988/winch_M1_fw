@@ -28,16 +28,19 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include "actuator/RGBLED.h"
 #include "sensor/encoder.h"
 #include "actuator/motor/motor_driver.h"
 #include "actuator/motor/speed_controller.h"
+#include "actuator/motor/position_controller.h"
 
 #include "config/config_control.h"
 
 #include "actuator/motor/ir2302_bridge.h"
+#include "communication/canfd.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -86,7 +89,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
- HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -129,7 +132,9 @@ int main(void)
 
   Encoder_Init();
   MotorDriver_Init();
-//  SpeedController_Init();
+  SpeedController_Init();
+  PositionController_Init();
+  CANFD_Init();
 
   HAL_Delay(100);
 //  IR2302Bridge_SetHB1Duty(1000);
@@ -138,6 +143,7 @@ int main(void)
 
   HAL_Delay(1000);
   HAL_TIM_Base_Start_IT(&htim6);
+
   printf("stm32_ready\r\n");
 
 //  MotorDriver_SetDuty(0.3);
@@ -147,6 +153,18 @@ int main(void)
 //  MotorDriver_SetDuty(1.0);
 //  HAL_Delay(1000);
   SpeedController_SetTargetSpeed(100.0);
+
+  uint32_t last_target_tick = HAL_GetTick();
+  uint32_t last_debug_tick  = HAL_GetTick();
+
+  bool target_toggle = false;
+
+  MotorDriver_SetState(MOTOR_STATE_DRIVE);
+
+  PositionController_SetMode(POSITION_CTRL_MODE_POSITION);
+  PositionController_SetTargetPosition(0.0f);
+
+  CANFD_Frame_t rx_frame;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -175,14 +193,71 @@ int main(void)
 //	  MotorDriver_SetDuty(0);
 //	  HAL_Delay(1000);
 
-	  printf("T=%d C=%d E=%d OUT=%d\r\n",
-			  (int)(1 * SpeedController_GetTargetSpeed()),
-			  (int)(1 * SpeedController_GetCurrentSpeed()),
-			  (int)(1 * SpeedController_GetError()),
-			  (int)(1000 * SpeedController_GetOutput())
-	  );
-	  printf("%ld\r\n",Encoder_GetRawCount());
-	  HAL_Delay(100);
+//	  printf("T=%d C=%d E=%d OUT=%d\r\n",
+//			  (int)(1 * SpeedController_GetTargetSpeed()),
+//			  (int)(1 * SpeedController_GetCurrentSpeed()),
+//			  (int)(1 * SpeedController_GetError()),
+//			  (int)(1000 * SpeedController_GetOutput())
+//	  );
+//	  printf("%ld\r\n",Encoder_GetRawCount());
+//	  HAL_Delay(100);
+
+
+
+//	  uint32_t now = HAL_GetTick();
+
+	  /*----------------------------------------------------------*/
+	  /* 3秒ごとに目標位置を�??り替�?                              */
+	  /*----------------------------------------------------------*/
+
+//	  if((uint32_t)(now - last_target_tick) >= 8000U)
+//	  {
+//		  last_target_tick = now;
+//
+//		  target_toggle = !target_toggle;
+//
+//		  if(target_toggle)
+//		  {
+//			  PositionController_SetTargetPosition(6.28f * 100.0f);
+//		  }
+//		  else
+//		  {
+//			  PositionController_SetTargetPosition(0.0f);
+//		  }
+//
+//	  }
+	  /*----------------------------------------------------------*/
+	  /* 200msごとに�?バッグ表示                                  */
+	  /*----------------------------------------------------------*/
+
+//	  if((uint32_t)(now - last_debug_tick) >= 200U)
+//	  {
+//		  last_debug_tick = now;
+//
+//		  printf("T=%d P=%d E=%d V=%d OUT=%d\r\n",
+//			  (int)(1 * PositionController_GetTargetPosition()),
+//			  (int)(1 * Encoder_GetPosition()),
+//			  (int)(1 * PositionController_GetError()),
+//			  (int)(1 * Encoder_GetSpeed()),
+//			  (int)(1 * PositionController_GetOutput())
+//		  	  );
+//	  }
+
+	  if (CANFD_Receive(&rx_frame))
+	  {
+		  printf(
+			  "CAN RX ID=0x%03lX LEN=%u : ",
+			  rx_frame.id,
+			  rx_frame.length
+		  );
+
+		  for (uint8_t i = 0U; i < rx_frame.length; i++)
+		  {
+			  printf("%02X ", rx_frame.data[i]);
+		  }
+
+		  printf("\r\n");
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -244,11 +319,11 @@ static void ControlTimer_Config(void)
     uint32_t prescaler;
     uint32_t period;
 
-    /* タイマカウンタを1 MHzにする */
+    /* タイマカウンタ�?1 MHzにする */
     prescaler =
         (timer_clock_hz / timer_tick_hz) - 1U;
 
-    /* 制御周期を設定 */
+    /* 制御周期を設�? */
     period =
         (timer_tick_hz / CONTROL_FREQ_HZ) - 1U;
 
@@ -257,7 +332,7 @@ static void ControlTimer_Config(void)
     __HAL_TIM_SET_PRESCALER(&htim6, prescaler);
     __HAL_TIM_SET_AUTORELOAD(&htim6, period);
 
-    /* PSC/ARRの変更を即時反映 */
+    /* PSC/ARRの変更を即時反�? */
     __HAL_TIM_SET_COUNTER(&htim6, 0);
     htim6.Instance->EGR = TIM_EGR_UG;
 }
@@ -266,18 +341,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if(htim->Instance == TIM6)
     {
-    	/* 制御処理開始 */
+    	/* 制御処�?開�? */
 		HAL_GPIO_WritePin(GPIO_EX_1_GPIO_Port, GPIO_EX_1_Pin, GPIO_PIN_SET);
 
         Encoder_Update(CONTROL_PERIOD_S);
 
         SpeedController_Update(CONTROL_PERIOD_S);
 
-        /* �?来 */
+        PositionController_Update(CONTROL_PERIOD_S);
+
+        /* ?��?来 */
         // PositionController_Update();
 
         // LoadCell_Update();
-        /* 制御処理終了 */
+        /* 制御処�?終�? */
 		HAL_GPIO_WritePin(GPIO_EX_1_GPIO_Port, GPIO_EX_1_Pin, GPIO_PIN_RESET);
     }
 }

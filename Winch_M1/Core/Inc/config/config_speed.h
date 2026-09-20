@@ -10,9 +10,9 @@
 
 
 /* PID Gain */
-#define SPEED_CTRL_KP                 (0.005f)
+#define SPEED_CTRL_KP                 (0.002f)
 #define SPEED_CTRL_KD                 (0.0000f)
-#define SPEED_CTRL_KI                 (0.01f)
+#define SPEED_CTRL_KI                 (0.08f)
 
 /* Integral Limit */
 #define SPEED_CTRL_INTEGRAL_MAX       (1000.0f)
